@@ -1,10 +1,12 @@
 import http from 'http';
+import { exec } from 'child_process';
 import { Server as SocketIOServer } from 'socket.io';
 import app from './app';
 import { ENV } from './config/env.config';
 import { logger } from './utils/logger';
 import { startCronJobs } from './services/cron.service';
 import { setIo } from './services/socket.service';
+
 
 
 const server = http.createServer(app);
@@ -85,20 +87,19 @@ server.listen(PORT, '0.0.0.0', () => {
 
   // Async auto-sync database schema on cloud boot if DATABASE_URL is present
   if (ENV.DATABASE_URL) {
-    import('child_process').then(({ exec }) => {
-      exec('npx prisma db push --skip-generate', (err, stdout) => {
-        if (err) {
-          logger.warn(`[Prisma Auto-Sync] Warning/Error: ${err.message}`);
-        } else {
-          logger.info(`[Prisma Auto-Sync] Schema synced successfully: ${stdout.split('\n')[0]}`);
-          // Attempt seeding after push
-          exec('npx prisma db seed', (seedErr) => {
-            if (!seedErr) logger.info('[Prisma Auto-Seed] Database seeded successfully.');
-          });
-        }
-      });
-    }).catch(e => logger.warn(`[Prisma Auto-Sync Error] ${e.message}`));
+    exec('npx prisma db push --skip-generate', (err, stdout) => {
+      if (err) {
+        logger.warn(`[Prisma Auto-Sync] Warning/Error: ${err.message}`);
+      } else {
+        logger.info(`[Prisma Auto-Sync] Schema synced successfully: ${stdout.split('\n')[0]}`);
+        // Attempt seeding after push
+        exec('npx prisma db seed', (seedErr) => {
+          if (!seedErr) logger.info('[Prisma Auto-Seed] Database seeded successfully.');
+        });
+      }
+    });
   }
+
 });
 
 

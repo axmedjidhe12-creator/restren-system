@@ -73,16 +73,34 @@ io.on('connection', (socket) => {
 // ========================
 // START SERVER
 // ========================
-const PORT = Number(ENV.PORT);
+const PORT = Number(ENV.PORT || 5000);
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 [RESTREN SYSTEM] Enterprise Backend running on port ${PORT} in ${ENV.NODE_ENV} mode`);
   logger.info(`📡 WebSocket server ready — Socket.IO active`);
   logger.info(`🌍 Serving Ethiopian Multi-Tenant Restaurant SaaS | Africa/Addis_Ababa`);
 
   // Start background cron jobs
   startCronJobs();
+
+  // Async auto-sync database schema on cloud boot if DATABASE_URL is present
+  if (ENV.DATABASE_URL) {
+    import('child_process').then(({ exec }) => {
+      exec('npx prisma db push --skip-generate', (err, stdout) => {
+        if (err) {
+          logger.warn(`[Prisma Auto-Sync] Warning/Error: ${err.message}`);
+        } else {
+          logger.info(`[Prisma Auto-Sync] Schema synced successfully: ${stdout.split('\n')[0]}`);
+          // Attempt seeding after push
+          exec('npx prisma db seed', (seedErr) => {
+            if (!seedErr) logger.info('[Prisma Auto-Seed] Database seeded successfully.');
+          });
+        }
+      });
+    }).catch(e => logger.warn(`[Prisma Auto-Sync Error] ${e.message}`));
+  }
 });
+
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

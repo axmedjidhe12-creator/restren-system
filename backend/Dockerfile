@@ -1,17 +1,3 @@
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-COPY package*.json ./
-COPY prisma ./prisma/
-
-RUN npm install
-RUN npx prisma generate
-
-COPY . .
-
-RUN npm run build
-
 FROM node:20-alpine
 
 WORKDIR /app
@@ -19,11 +5,14 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm install --only=production
-RUN npx prisma generate
+RUN npm install
 
-COPY --from=builder /app/dist ./dist
+COPY . .
+
+RUN npx prisma generate
+RUN npm run build
 
 EXPOSE 5000
 
 CMD ["node", "dist/server.js"]
+

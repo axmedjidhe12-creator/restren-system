@@ -65,10 +65,12 @@ app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'OK',
     service: 'RESTREN-SYSTEM-API',
+    uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     timezone: 'Africa/Addis_Ababa'
   });
 });
+
 
 // ========================
 // API v1 ROUTES
